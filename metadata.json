@@ -1,0 +1,6 @@
+{
+  "name": "AMBAR CLUB",
+  "description": "Sistema de gestión empresarial de lujo para clubes nocturnos, POS, inventario, mesas y auditoría.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,175 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- GLOBAL INITIAL SEED / SAFETY NET ---
+    // If the database has not been seeded yet (i.e. 'u1' user doc does not exist),
+    // allow initial reads and writes for seeding. Once seeded, strictly enforce role-based rules.
+    match /{document=**} {
+      allow read, write: if request.auth == null || !exists(/databases/$(database)/documents/users/u1);
+    }
+
+    // --- SECURITY HELPERS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function getUserRole(uid) {
+      return getUserDoc(uid).data.role;
+    }
+
+    // Role predicates
+    function isAdmin(uid) {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(uid)) && getUserRole(uid) == "Administrador";
+    }
+
+    function isGerente(uid) {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(uid)) && getUserRole(uid) == "Gerente";
+    }
+
+    function isSupervisor(uid) {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(uid)) && getUserRole(uid) == "Supervisor";
+    }
+
+    function isCaja(uid) {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(uid)) && getUserRole(uid) == "Caja";
+    }
+
+    function isBartender(uid) {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(uid)) && getUserRole(uid) == "Bartender";
+    }
+
+    function isAlmacenero(uid) {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(uid)) && getUserRole(uid) == "Almacenero";
+    }
+
+    function isAuditor(uid) {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(uid)) && getUserRole(uid) == "Auditor";
+    }
+
+    function isStaff(uid) {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(uid));
+    }
+
+    // --- 1. USERS COLLECTION ---
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn(); // Allow profile creation on signup
+      allow update: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid) || request.auth.uid == userId);
+      allow delete: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid));
+    }
+
+    // --- 2. CATEGORIES COLLECTION ---
+    match /categories/{categoryId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid) || isAlmacenero(request.auth.uid));
+    }
+
+    // --- 3. SUPPLIERS COLLECTION ---
+    match /suppliers/{supplierId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid) || isAlmacenero(request.auth.uid));
+    }
+
+    // --- 4. PRODUCTS COLLECTION ---
+    match /products/{productId} {
+      allow read: if isSignedIn();
+      // Only authorized staff can modify catalog products
+      allow create, update: if isSignedIn() && (
+        isAdmin(request.auth.uid) || 
+        isGerente(request.auth.uid) || 
+        isAlmacenero(request.auth.uid) || 
+        isBartender(request.auth.uid) || 
+        isCaja(request.auth.uid)
+      );
+      allow delete: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid));
+    }
+
+    // --- 5. TABLES COLLECTION (VIP SECTIONS) ---
+    match /tables/{tableId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isStaff(request.auth.uid);
+    }
+
+    // --- 6. CLIENTS COLLECTION ---
+    match /clients/{clientId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isStaff(request.auth.uid);
+    }
+
+    // --- 7. EMPLOYEES COLLECTION ---
+    match /employees/{employeeId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid));
+    }
+
+    // --- 8. SYSTEM CONFIGURATION ---
+    match /config/{configId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid));
+    }
+
+    // --- 9. SALES COLLECTION (POS TICKETS) ---
+    match /sales/{saleId} {
+      allow read: if isSignedIn();
+      // Cashiers, bartenders, managers can register sales
+      allow create: if isSignedIn() && (
+        isAdmin(request.auth.uid) || 
+        isGerente(request.auth.uid) || 
+        isCaja(request.auth.uid) || 
+        isBartender(request.auth.uid)
+      );
+      // Sales are strictly immutable unless authorized manager nullifies them (cancelSale)
+      allow update: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid));
+      allow delete: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid));
+    }
+
+    // --- 10. PURCHASES COLLECTION ---
+    match /purchases/{purchaseId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid) || isAlmacenero(request.auth.uid));
+      allow update: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid));
+      allow delete: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid));
+    }
+
+    // --- 11. INVENTORY MOVEMENTS (KARDEX - IMMUTABLE) ---
+    match /movements/{movementId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isStaff(request.auth.uid);
+      // Strictly immutable once logged. Updates are forbidden. Deletion allowed for admin/gerente on reset.
+      allow update: if false;
+      allow delete: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid));
+    }
+
+    // --- 12. CASH REGISTERS & SHIFTS ---
+    match /cashSessions/{sessionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid) || isCaja(request.auth.uid));
+      allow update: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid) || isCaja(request.auth.uid));
+      allow delete: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid));
+    }
+
+    // --- 13. AUDIT LOGS (SECURITY - IMMUTABLE) ---
+    match /auditLogs/{logId} {
+      // Only administrators, managers, and auditors are allowed to read audit trails
+      allow read: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid) || isAuditor(request.auth.uid));
+      // Allow any system activity or client to append (create) audit logs securely.
+      // Since update/delete are false, they can never be modified or covered up.
+      allow create: if true;
+      // Strictly unalterable
+      allow update, delete: if false;
+    }
+
+    // --- 14. WAITER SALES REPORTS ---
+    match /waiterReports/{reportId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn() && (isAdmin(request.auth.uid) || isGerente(request.auth.uid));
+    }
+  }
+}

@@ -1,0 +1,314 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with RBAC role and system permissions",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth unique ID" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["Administrador", "Gerente", "Supervisor", "Caja", "Bartender", "Almacenero", "Mesero", "Auditor"] },
+        "isActive": { "type": "boolean" },
+        "permissions": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "name", "role", "isActive", "permissions", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Inventory product item including bottle-ml metrics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "internalCode": { "type": "string" },
+        "barCode": { "type": "string" },
+        "category": { "type": "string" },
+        "brand": { "type": "string" },
+        "supplierId": { "type": "string" },
+        "description": { "type": "string" },
+        "cost": { "type": "number" },
+        "price": { "type": "number" },
+        "specialPrice": { "type": "number" },
+        "unit": { "type": "string" },
+        "quantity": { "type": "number" },
+        "minStock": { "type": "number" },
+        "maxStock": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "bottleConfig": {
+          "type": "object",
+          "properties": {
+            "isBottle": { "type": "boolean" },
+            "capacityMl": { "type": "number" },
+            "currentMl": { "type": "number" },
+            "shotSizes": { "type": "array" }
+          }
+        }
+      },
+      "required": ["id", "name", "internalCode", "barCode", "category", "brand", "cost", "price", "unit", "quantity", "minStock", "isActive"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product categories of beverages and food",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Suppliers of inventory stock",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "company": { "type": "string" },
+        "nit": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "contact": { "type": "string" },
+        "observations": { "type": "string" },
+        "pendingBalance": { "type": "number" }
+      },
+      "required": ["id", "name", "company", "nit", "phone", "email"]
+    },
+    "SupplierPurchase": {
+      "title": "Supplier Purchase",
+      "description": "Invoiced purchases of products into inventory",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "supplierId": { "type": "string" },
+        "supplierName": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "tax": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "date": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" }
+      },
+      "required": ["id", "invoiceNumber", "supplierId", "items", "total", "date", "userId"]
+    },
+    "InventoryMovement": {
+      "title": "Inventory Movement",
+      "description": "Saves any modification, adjustment, entry or exit of product stock",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "type": { "type": "string", "enum": ["Entrada", "Salida", "Transferencia", "Ajuste", "Venta", "Compra"] },
+        "quantity": { "type": "number" },
+        "mlDelta": { "type": "number" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "date": { "type": "string" },
+        "cost": { "type": "number" },
+        "balanceAfter": { "type": "number" },
+        "observations": { "type": "string" }
+      },
+      "required": ["id", "productId", "productName", "type", "quantity", "userId", "userName", "date", "balanceAfter"]
+    },
+    "Sale": {
+      "title": "POS Sale",
+      "description": "Customer purchase transaction record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ticketNumber": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "discount": { "type": "number" },
+        "tax": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "amountPaid": { "type": "number" },
+        "change": { "type": "number" },
+        "tableId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "date": { "type": "string" }
+      },
+      "required": ["id", "ticketNumber", "items", "subtotal", "total", "paymentMethod", "userId", "date"]
+    },
+    "Table": {
+      "title": "Table",
+      "description": "Club seating tables with consumption tabs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "number": { "type": "string" },
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["Libre", "Ocupada", "Reservada", "En limpieza"] },
+        "currentWaiterId": { "type": "string" },
+        "currentWaiterName": { "type": "string" },
+        "consumption": { "type": "array" },
+        "notes": { "type": "string" },
+        "openedAt": { "type": "string" }
+      },
+      "required": ["id", "number", "name", "status", "consumption"]
+    },
+    "CashSession": {
+      "title": "Cash Register Session",
+      "description": "Session tracking box openings, transactions, and closures",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "openedAt": { "type": "string" },
+        "closedAt": { "type": "string" },
+        "openingBalance": { "type": "number" },
+        "closingBalance": { "type": "number" },
+        "expectedBalance": { "type": "number" },
+        "realBalance": { "type": "number" },
+        "difference": { "type": "number" },
+        "status": { "type": "string", "enum": ["Abierta", "Cerrada"] },
+        "cashInflows": { "type": "number" },
+        "cashOutflows": { "type": "number" },
+        "salesTotal": { "type": "number" },
+        "observations": { "type": "string" }
+      },
+      "required": ["id", "userId", "userName", "openedAt", "openingBalance", "status"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Nightclub visitor customer profile with loyalty points",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "birthday": { "type": "string" },
+        "preferences": { "type": "string" },
+        "points": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "phone", "email", "points"]
+    },
+    "Employee": {
+      "title": "Employee",
+      "description": "Club employees with sales and commission counters",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "phone": { "type": "string" },
+        "schedule": { "type": "string" },
+        "comissionsRate": { "type": "number" },
+        "salesCount": { "type": "number" },
+        "totalSalesValue": { "type": "number" },
+        "totalComissions": { "type": "number" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["id", "name", "role", "isActive"]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "Log capturing action, module, timestamps, and deep before-after json state deltas",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "role": { "type": "string" },
+        "action": { "type": "string" },
+        "module": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "ipAddress": { "type": "string" },
+        "deviceInfo": { "type": "string" },
+        "beforeState": { "type": "string" },
+        "afterState": { "type": "string" }
+      },
+      "required": ["id", "userId", "userName", "role", "action", "module", "timestamp"]
+    },
+    "WaiterReport": {
+      "title": "Waiter Sales Report",
+      "description": "Report of a sale made by a waiter in the disco zone, sent to a Cash Register for approval and stock deduction",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "waiterId": { "type": "string" },
+        "waiterName": { "type": "string" },
+        "targetCaja": { "type": "string" },
+        "items": { "type": "array" },
+        "paymentMethod": { "type": "string" },
+        "status": { "type": "string", "enum": ["pendiente", "aprobado", "rechazado"] },
+        "imageUrl": { "type": "string" },
+        "total": { "type": "number" },
+        "date": { "type": "string" },
+        "observations": { "type": "string" }
+      },
+      "required": ["id", "waiterId", "waiterName", "targetCaja", "items", "paymentMethod", "status", "total", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Registered nightclub user profiles and RBAC permissions"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Bar, kitchen, beverage, and liquor catalog and bottle-percentage remaining levels"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Categories of items for easy grouping and dashboard breakdown metrics"
+    },
+    "/suppliers/{supplierId}": {
+      "schema": "Supplier",
+      "description": "Suppliers directory with Nit and account balances"
+    },
+    "/purchases/{purchaseId}": {
+      "schema": "SupplierPurchase",
+      "description": "Supply purchases that automatically increment stock count"
+    },
+    "/movements/{movementId}": {
+      "schema": "InventoryMovement",
+      "description": "Complete product inventory delta logging (Kardex backend log)"
+    },
+    "/sales/{saleId}": {
+      "schema": "Sale",
+      "description": "Standardized sales transactions for analytics and cash sessions"
+    },
+    "/tables/{tableId}": {
+      "schema": "Table",
+      "description": "Live status and ongoing open tabs of physical tables inside VIP, Lounge, and Main floors"
+    },
+    "/cashSessions/{sessionId}": {
+      "schema": "CashSession",
+      "description": "Shift cash drawer openings, closures, cash operations, and calculated discrepancies"
+    },
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Registered regular VIP guests with dynamic loyalty tier calculation points"
+    },
+    "/employees/{employeeId}": {
+      "schema": "Employee",
+      "description": "Bar employees, waiters, and promoters to tally sales and commissions"
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Read-only logs tracking sensitive mutations with before and after state snapshots"
+    },
+    "/waiterReports/{reportId}": {
+      "schema": "WaiterReport",
+      "description": "Reports of sales made by waiters in the disco zones to cash registers for confirmation"
+    }
+  }
+}
